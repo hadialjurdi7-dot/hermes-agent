@@ -38,7 +38,7 @@ dependencies = [
   # user picks that backend. Smaller `dependencies` = smaller blast
   # radius for the next supply-chain attack.
   "openai==2.24.0; python_version >= '3.14'",
-  "certifi==2026.5.20; python_version >= '3.14'",
+  "certifi==2026.10.18; python_version >= '3.14'",
   # TLS trust comes from the OS certificate store (agent/ssl_verify.py), so
   # a corporate/internal root installed on the machine just works. certifi
   # above stays a direct pin because httpx/requests/openai each depend on
@@ -173,7 +173,7 @@ dependencies = [
   # libs required for the codecs we use, so it's safe to ship in the base
   # install rather than gating it behind an extra + a mid-session lazy install
   # (which deadlocked the CLI under prompt_toolkit — see #40490).
-  "Pillow==12.3.0; python_version >= '3.14'",
+  "Pillow==13.0.0; python_version >= '3.14'",
   # HEIF/HEIC/AVIF decode for the vision tools. iPhone photos and screenshots
   # are HEIC (frequently mislabeled .jpg by upload pipelines); Pillow has no
   # built-in HEIF codec, so without this the vision resolver rejects them as
@@ -266,14 +266,14 @@ google-meet = ["playwright==1.62.0", "websockets==15.0.1"]
 messaging = [
   "python-telegram-bot[webhooks]==22.8",
   "discord.py[voice]==2.7.1",
-  "aiohttp==3.14.3",
-  "brotlicffi==1.2.0.2",
+  "aiohttp==3.14.4",
+  "brotlicffi==1.2.1.0",
   "slack-bolt==1.30.0",
   "slack-sdk==3.44.1",
   "qrcode==7.4.2",
-] # aiohttp 3.14.3: prior CVEs + GHSA-cq5v-8q36-5273/GHSA-mfx4-hv73-q22v/GHSA-mq44-7p77-q5h7
+] # aiohttp 3.14.4: prior CVEs + CVE-2026-111064/CVE-2026-111066/GHSA-2g87-pp6c-29x5
 cron = [] # croniter is now a core dependency; this extra kept for back-compat
-slack = ["slack-bolt==1.30.0", "slack-sdk==3.44.1", "aiohttp==3.14.3"]
+slack = ["slack-bolt==1.30.0", "slack-sdk==3.44.1", "aiohttp==3.14.4"]
 # Matrix gateway deps. `mautrix[encryption]` pulls `python-olm`, whose
 # vendored libolm (archived 2023) cannot build on Windows or modern macOS:
 # no wheels for those targets AND the sdist fails to compile on current
@@ -286,8 +286,8 @@ matrix = [
   "aiosqlite==0.22.1; sys_platform == 'linux'",
   "asyncpg==0.31.0; sys_platform == 'linux'",
   "aiohttp-socks==0.11.0; sys_platform == 'linux'",
-  "aiohttp==3.14.3; sys_platform == 'linux'",
-] # aiohttp 3.14.3: prior CVEs + GHSA-cq5v-8q36-5273/GHSA-mfx4-hv73-q22v/GHSA-mq44-7p77-q5h7 (mautrix/aiohttp-socks only cap aiohttp<4 / >=3.10, so pin the patched floor directly)
+  "aiohttp==3.14.4; sys_platform == 'linux'",
+] # aiohttp 3.14.4: prior CVEs + CVE-2026-111064/CVE-2026-111066/GHSA-2g87-pp6c-29x5 (mautrix/aiohttp-socks only cap aiohttp<4 / >=3.10, so pin the patched floor directly)
 
 # WeCom callback-mode adapter — parses untrusted XML POST bodies from
 # WeCom-controlled callback endpoints, so we use defusedxml (drop-in
@@ -403,11 +403,11 @@ mcp = [
 # Backwards-compatible no-op alias. Relay is a core dependency on supported
 # wheel targets and intentionally unavailable on other platforms.
 nemo-relay = []
-sms = ["aiohttp==3.14.3"]
+sms = ["aiohttp==3.14.4"]
 teams = [
   "microsoft-teams-apps==2.0.13.4",
-  "aiohttp==3.14.3",
-] # aiohttp 3.14.3: prior CVEs + GHSA-cq5v-8q36-5273/GHSA-mfx4-hv73-q22v/GHSA-mq44-7p77-q5h7
+  "aiohttp==3.14.4",
+] # aiohttp 3.14.4: prior CVEs + CVE-2026-111064/CVE-2026-111066/GHSA-2g87-pp6c-29x5
 # Computer use talks to PM's pinned cua-driver over MCP stdio. This extra
 # provides the MCP client, independently of the native driver package.
 computer-use = [
@@ -625,6 +625,24 @@ override-dependencies = [
   # never builds a misaki G2P. The never-true marker removes it from the lock.
   # Remove this line when misaki drops it or a 3.14-capable release fits.
   "spacy-curated-transformers; sys_platform == 'never'",
+  # pillow 12.3.0 carries 28 advisories (CVE-2026-112393/112398/112403/112900/
+  # CVE-2026-96639 and more); 13.0.0 is the lowest fixed release (no 12.x
+  # release carries the fixes). browser-harness 0.1.13 still pins pillow==12.3.0
+  # exactly, so the override forces the patched version onto it. Remove when
+  # browser-harness raises its own floor.
+  "pillow==13.0.0",
+  # filelock 3.32.4 carries CVE-2026-112940; 4.2.1 is the lowest fixed release
+  # (no 3.x release carries the fix). Pulled transitively by torch and
+  # huggingface-hub; the override forces the patched version onto both.
+  # Remove this line once torch / huggingface-hub raise their own floor.
+  "filelock==4.2.1",
+  # msgpack 1.2.1 carries CVE-2026-114613; 1.2.3 is the lowest fixed release.
+  # Pulled transitively by fal-client. Remove when fal-client raises its floor.
+  "msgpack==1.2.3",
+  # oauthlib 3.3.1 carries CVE-2026-49272 (and the related 49264/49265);
+  # 4.0.0 is the lowest fixed release (no 3.x release carries the fix).
+  # Pulled transitively by requests-oauthlib. Remove when it raises its floor.
+  "oauthlib==4.0.0",
 ]
 # Release-age check: Hermes's dependencies must be at least 3 days old when Hermes
 # locks them. It runs where uv.lock is resolved (`hermes pm lock`, and CI's lock
